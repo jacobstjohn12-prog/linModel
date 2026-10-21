@@ -1,0 +1,148 @@
+---
+title: "Linear models for miles per gallon"
+author: "Jacob St John"
+date: "October 21, 2026"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+# Introduction
+
+A linear model estimates a straight-line function from data and then uses that function to predict a new outcome. The data are the 32 cars in `mtcars`. The outcome is miles per gallon (`mpg`). The predictors used here are weight (`wt`, in thousands of pounds) and engine displacement (`disp`, in cubic inches).
+
+Each question below has a graph, a numerical description, a fitted model, and a prediction for a car with **wt = 3.050** thousand pounds and **disp = 122** cubic inches. A prediction for one new car is reported with a 95% prediction interval.
+
+```{r}
+data(mtcars)
+```
+
+# Question 1. Miles per gallon from weight
+
+Heavier cars are expected to use more fuel, so the cloud of points should slope downward.
+
+```{r}
+plot(
+  mpg ~ wt,
+  data = mtcars,
+  main = "Miles per gallon by weight",
+  xlab = "Weight (thousand pounds)",
+  ylab = "Miles per gallon",
+  pch = 19,
+  col = "#2c7fb8"
+)
+abline(lm(mpg ~ wt, data = mtcars), col = "#e34a33", lwd = 2)
+```
+
+The points fall from the upper left to the lower right. The red line is the fitted model. Cars near 1.5 thousand pounds reach about 30 miles per gallon, and cars near 5 thousand pounds sit near 10 to 15.
+
+```{r}
+summary(mtcars$wt)
+summary(mtcars$mpg)
+cor.test(mtcars$mpg, mtcars$wt)
+```
+
+Weight averages 3.22 thousand pounds (SD 0.98). Miles per gallon averages 20.09 (SD 6.03). The correlation is **r = -0.868**. If weight and mileage were really unrelated, the probability of a correlation this far from zero is **1.29 × 10^-10**.
+
+```{r}
+model_wt <- lm(mpg ~ wt, data = mtcars)
+summary(model_wt)
+predict(model_wt, newdata = data.frame(wt = 3.050), interval = "prediction")
+```
+
+The fitted line is
+
+**mpg = 37.285 - 5.344 × wt**.
+
+Each extra thousand pounds of weight is associated with about 5.34 fewer miles per gallon. The slope test gives *t* = -9.56 on 30 degrees of freedom. If the true slope were zero, the probability of a slope estimate this large is **1.29 × 10^-10**. The line accounts for **75.3%** of the variation in mileage (R-squared = 0.753).
+
+For a car weighing 3.050 thousand pounds, the model predicts **21.0 miles per gallon**. The 95% prediction interval is **14.7 to 27.3**, so a single car of that weight could reasonably land anywhere in that range.
+
+# Question 2. Miles per gallon from displacement
+
+A larger engine is also expected to use more fuel.
+
+```{r}
+plot(
+  mpg ~ disp,
+  data = mtcars,
+  main = "Miles per gallon by engine displacement",
+  xlab = "Displacement (cubic inches)",
+  ylab = "Miles per gallon",
+  pch = 19,
+  col = "#2c7fb8"
+)
+abline(lm(mpg ~ disp, data = mtcars), col = "#e34a33", lwd = 2)
+```
+
+Mileage falls as displacement rises. The smallest engines, near 70 cubic inches, are the highest-mileage cars. The largest engines, above 400 cubic inches, are among the lowest.
+
+```{r}
+summary(mtcars$disp)
+cor.test(mtcars$mpg, mtcars$disp)
+```
+
+Displacement averages 230.7 cubic inches (SD 123.9). The correlation with mileage is **r = -0.848**. If displacement and mileage were unrelated, the probability of a correlation this strong is **9.38 × 10^-10**.
+
+```{r}
+model_disp <- lm(mpg ~ disp, data = mtcars)
+summary(model_disp)
+predict(model_disp, newdata = data.frame(disp = 122), interval = "prediction")
+```
+
+The fitted line is
+
+**mpg = 29.600 - 0.0412 × disp**.
+
+Each extra cubic inch of displacement is associated with about 0.041 fewer miles per gallon. The slope test gives *t* = -8.75 on 30 degrees of freedom. If the true slope were zero, the probability of a result this extreme is **9.38 × 10^-10**. This line accounts for **71.8%** of the variation in mileage.
+
+For an engine of 122 cubic inches, the model predicts **24.6 miles per gallon**. The 95% prediction interval is **17.7 to 31.4**.
+
+# Question 3. Miles per gallon from weight and displacement together
+
+Weight and displacement move together, so the two-predictor model has to separate their overlap. The plots below show both predictors against mileage, and against each other.
+
+```{r}
+par(mfrow = c(1, 3))
+plot(mpg ~ wt, data = mtcars, main = "MPG vs weight", xlab = "Weight (1000 lbs)", ylab = "MPG", pch = 19, col = "#2c7fb8")
+plot(mpg ~ disp, data = mtcars, main = "MPG vs displacement", xlab = "Displacement (cu in)", ylab = "MPG", pch = 19, col = "#2c7fb8")
+plot(disp ~ wt, data = mtcars, main = "Displacement vs weight", xlab = "Weight (1000 lbs)", ylab = "Displacement", pch = 19, col = "#31a354")
+par(mfrow = c(1, 1))
+```
+
+Heavier cars have larger engines. The correlation between weight and displacement is **r = 0.888**.
+
+```{r}
+cor.test(mtcars$wt, mtcars$disp)
+model_both <- lm(mpg ~ wt + disp, data = mtcars)
+summary(model_both)
+predict(
+  model_both,
+  newdata = data.frame(wt = 3.050, disp = 122),
+  interval = "prediction"
+)
+```
+
+The fitted function is
+
+**mpg = 34.961 - 3.351 × wt - 0.0177 × disp**.
+
+Holding displacement fixed, each extra thousand pounds is associated with about 3.35 fewer miles per gallon (*t* = -2.88, *p* = 0.00743). If the weight slope were truly zero after accounting for displacement, the probability of a weight coefficient this large is **0.00743**. Holding weight fixed, the displacement slope is -0.0177 miles per gallon per cubic inch (*t* = -1.93, *p* = 0.0636). That probability, **0.0636**, is not small enough to treat the displacement slope as clearly different from zero once weight is already in the model. The two predictors share so much information that displacement adds only a little once weight is known.
+
+Together the two predictors account for **78.1%** of the variation in mileage. The overall model test gives *F* = 51.69 on 2 and 29 degrees of freedom. If both slopes were really zero, the probability of an *F* statistic this large is **2.74 × 10^-10**.
+
+For the requested car, wt = 3.050 and disp = 122, the two-predictor model predicts **22.6 miles per gallon**. The 95% prediction interval is **16.3 to 28.9**.
+
+# Conclusion
+
+All three models say the same thing about direction: more weight and more displacement go with lower mileage. For this specific car the three predictions are
+
+| Model | Predicted mpg | 95% prediction interval |
+| --- | ---: | --- |
+| Weight only | 21.0 | 14.7 to 27.3 |
+| Displacement only | 24.6 | 17.7 to 31.4 |
+| Weight and displacement | 22.6 | 16.3 to 28.9 |
+
+The two-predictor prediction, **22.6 miles per gallon**, is the one that uses both requested values at once. It sits between the two single-predictor predictions. Weight is the stronger of the two predictors. Displacement is strongly related to mileage by itself, but much of that relationship is the same information already carried by weight.
